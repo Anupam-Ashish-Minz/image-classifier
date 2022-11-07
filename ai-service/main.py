@@ -1,5 +1,6 @@
 import sys
 import math
+import socket
 import numpy as np
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from PIL import Image
@@ -109,7 +110,8 @@ def train():
             w1 -= learning_rate * loss_h_w
             b1 -= learning_rate * loss_h_b
 
-        print(f"Epoch {epoch} Training Acc: {round((nr_correct / x_train.shape[0]) * 100, 2)}%")
+        print(
+            f"Epoch {epoch} Training Acc: {round((nr_correct / x_train.shape[0]) * 100, 2)}%")
         nr_correct = 0
 
     # save
@@ -197,28 +199,21 @@ def test_png_imgs():
 
 def run():
     hostname = "localhost"
-    port = 8000
+    port = 5533
 
-    class MyServer(BaseHTTPRequestHandler):
-        def do_GET(self):
-            self.send_response(200)
-            self.send_header("Content-Type", "text/plain")
-            self.end_headers()
-            self.wfile.write(bytes("hello world", "utf-8"))
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-        def do_POST(self):
-            print(self)
+    s.bind((hostname, port))
+    s.listen(5)
 
-    webServer = HTTPServer((hostname, port), MyServer)
-    print("Server started http://%s:%s" % (hostname, port))
+    while True:
+        c, addr = s.accept()
+        data = list(c.recv(784))
 
-    try:
-        webServer.serve_forever()
-    except KeyboardInterrupt:
-        pass
+        # do something with the data
+        # send back the results
 
-    webServer.server_close()
-    print("Server stopped.")
+        c.close()
 
 
 if __name__ == "__main__":
