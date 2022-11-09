@@ -5,6 +5,8 @@
 	// pixel size
 	const px = 20;
 
+	let image_values = new Int8Array(784).fill(0);
+
 	let canvas: HTMLCanvasElement;
 	let ctx: CanvasRenderingContext2D | null;
 
@@ -40,6 +42,8 @@
 			ctx.fillStyle = '#000';
 			ctx.fillRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
 			ctx.strokeRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
+      const index = Math.floor(mouse_pos.x / px) + block_count * Math.floor(mouse_pos.y / px);
+			image_values[index] = 255;
 		}
 	}
 
@@ -63,6 +67,9 @@
 	on:mousemove={(event) => {
 		if (draw_mode) draw(event);
 	}}
+  on:click={(event) => {
+    draw(event);
+  }}
 	width="560px"
 	height="560px"
 />
