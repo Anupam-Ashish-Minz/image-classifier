@@ -198,12 +198,13 @@ def run():
     print("server listening on port localhost", port)
     while True:
         c, addr = s.accept()
-        data = list(c.recv(784))
+        x = np.array(list(c.recv(784)))
 
-        # o = forward_prop(data)
-        # i = np.argmax(o)
+        x.shape += (1,)
 
-        i = 5
+        o = forward_prop(x)
+        i = np.argmax(o)
+
         c.send(numbers[i].to_bytes(2, 'big'))
 
         c.close()
