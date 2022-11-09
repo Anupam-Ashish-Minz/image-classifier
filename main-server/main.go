@@ -1,11 +1,12 @@
 package main
 
 import (
-	"encoding/binary"
-	"fmt"
+	"io/ioutil"
 	"log"
 	"net"
 	"net/http"
+
+	"github.com/rs/cors"
 )
 
 func root(w http.ResponseWriter, r *http.Request) {
@@ -14,8 +15,14 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendDataToAI(w http.ResponseWriter, r *http.Request) {
-	conn, err := net.Dial("tcp", "localhost:5533")
+	req_buf, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		log.Println("failed to read request body")
+		log.Println(err)
+		return
+	}
 
+	conn, err := net.Dial("tcp", "localhost:5533")
 	if err != nil {
 		log.Println("failed to get socket connection")
 		log.Println(err)
@@ -23,28 +30,28 @@ func sendDataToAI(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	img_data := make([]byte, 784)
+	img_data := req_buf
 
 	conn.Write(img_data)
 
-	bufr := make([]byte, 2)
-	conn.Read(bufr)
+	send_buf := make([]byte, 2)
+	conn.Read(send_buf)
 
-	if bufr == nil {
+	if send_buf == nil {
 		log.Println("nil bufr")
 		return
 	}
 
-	ans := binary.BigEndian.Uint16(bufr)
-
-	log.Println(ans)
-
-	w.Write([]byte(fmt.Sprint(ans)))
+	w.Write(send_buf)
 }
 
 func main() {
-	http.HandleFunc("/", root)
-	http.HandleFunc("/ai", sendDataToAI)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", root)
+	mux.HandleFunc("/ai", sendDataToAI)
+
+	handler := cors.Default().Handler(mux)
+
 	log.Println("the server started on http://localhost:4000")
-	log.Println(http.ListenAndServe(":4000", nil))
+	log.Println(http.ListenAndServe(":4000", handler))
 }
