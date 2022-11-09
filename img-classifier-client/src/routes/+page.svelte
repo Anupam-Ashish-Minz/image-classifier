@@ -2,11 +2,11 @@
 	import { onMount } from 'svelte';
 
 	const block_count = 28;
-  // pixel size
+	// pixel size
 	const px = 20;
 
 	let canvas: HTMLCanvasElement;
-	let ctx;
+	let ctx: CanvasRenderingContext2D | null;
 
 	let draw_mode = false;
 	let mouse_pos = {
@@ -14,7 +14,7 @@
 		y: 0
 	};
 
-	onMount(() => {
+	function make_background() {
 		ctx = canvas.getContext('2d');
 		if (ctx) {
 			ctx.fillStyle = '#ffffff';
@@ -26,6 +26,25 @@
 				}
 			}
 		}
+	}
+
+	function draw(event: MouseEvent & { currentTarget: EventTarget & HTMLCanvasElement }) {
+		const canvas_rect = canvas.getBoundingClientRect();
+		mouse_pos = {
+			x: event.clientX - canvas_rect.left,
+			y: event.clientY - canvas_rect.top
+		};
+
+		if (ctx) {
+			ctx.strokeStyle = '#aaa';
+			ctx.fillStyle = '#000';
+			ctx.fillRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
+			ctx.strokeRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
+		}
+	}
+
+	onMount(() => {
+		make_background();
 	});
 </script>
 
@@ -42,11 +61,7 @@
 		draw_mode = true;
 	}}
 	on:mousemove={(event) => {
-		if (draw_mode)
-			mouse_pos = {
-				x: event.clientX,
-				y: event.clientY
-			};
+		if (draw_mode) draw(event);
 	}}
 	width="560px"
 	height="560px"
