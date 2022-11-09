@@ -3,7 +3,7 @@
 
 	const block_count = 28;
 	// pixel size
-	const px = 20;
+	const px = 10;
 
 	let image_values = new Int8Array(784).fill(0);
 
@@ -30,21 +30,29 @@
 		}
 	}
 
-	function draw(event: MouseEvent & { currentTarget: EventTarget & HTMLCanvasElement }) {
-		const canvas_rect = canvas.getBoundingClientRect();
-		mouse_pos = {
-			x: event.clientX - canvas_rect.left,
-			y: event.clientY - canvas_rect.top
-		};
-
+	function draw_pixel({ x, y }: { x: number; y: number }) {
+		const index = Math.floor(x / px) + block_count * Math.floor(y / px);
 		if (ctx) {
 			ctx.strokeStyle = '#aaa';
 			ctx.fillStyle = '#000';
-			ctx.fillRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
-			ctx.strokeRect(mouse_pos.x - (mouse_pos.x % px), mouse_pos.y - (mouse_pos.y % px), px, px);
-      const index = Math.floor(mouse_pos.x / px) + block_count * Math.floor(mouse_pos.y / px);
+			ctx.fillRect(x - (x % px), y - (y % px), px, px);
+			ctx.strokeRect(x - (x % px), y - (y % px), px, px);
 			image_values[index] = 255;
 		}
+	}
+
+	function draw(event: MouseEvent & { currentTarget: EventTarget & HTMLCanvasElement }) {
+		const canvas_rect = canvas.getBoundingClientRect();
+		mouse_pos = {
+			x: Math.floor(event.clientX - canvas_rect.left),
+			y: Math.floor(event.clientY - canvas_rect.top)
+		};
+		// draw_pixel({ x: mouse_pos.x, y: mouse_pos.y - px });
+		draw_pixel({ x: mouse_pos.x, y: mouse_pos.y + px });
+		// draw_pixel({ x: mouse_pos.x - px, y: mouse_pos.y });
+		draw_pixel({ x: mouse_pos.x + px, y: mouse_pos.y });
+
+		draw_pixel({ x: mouse_pos.x, y: mouse_pos.y });
 	}
 
 	onMount(() => {
@@ -52,7 +60,7 @@
 	});
 </script>
 
-<h1>Draw an image</h1>
+<h1>Draw an Digit</h1>
 <p>mouse position {mouse_pos.x} {mouse_pos.y}</p>
 
 <canvas
@@ -67,11 +75,11 @@
 	on:mousemove={(event) => {
 		if (draw_mode) draw(event);
 	}}
-  on:click={(event) => {
-    draw(event);
-  }}
-	width="560px"
-	height="560px"
+	on:click={(event) => {
+		draw(event);
+	}}
+	width={block_count * px}
+	height={block_count * px}
 />
 
 <style>
