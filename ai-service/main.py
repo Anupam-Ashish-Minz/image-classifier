@@ -2,7 +2,6 @@ import sys
 import math
 import socket
 import numpy as np
-from http.server import BaseHTTPRequestHandler, HTTPServer
 from PIL import Image
 
 
@@ -26,7 +25,7 @@ def read_data():
     return x, y
 
 
-def read_testing():
+def read_testing_data():
     with np.load("mnist.npz") as f:
         x, y = f["x_test"], f["y_test"]
     x = x.astype("float32") / 255
@@ -44,6 +43,24 @@ def read_testing():
 
 def sigmoid(x):
     return 1 / (1 + np.exp(-x))
+
+
+def init_model():
+    with np.load("trained_model.npz") as f:
+        w1 = f["w1"]
+        b1 = f["b1"]
+        w2 = f["w2"]
+        b2 = f["b2"]
+
+    def forward_prop(x):
+        z1 = w1.dot(x) + b1
+        h = sigmoid(z1)
+
+        z2 = w2.dot(h) + b2
+        o = sigmoid(z2)
+        return o
+
+    return forward_prop
 
 
 def train():
@@ -74,7 +91,7 @@ def train():
 
             # backpropogation for output to hidden layer
             # mean squared error
-            err = np.mean((o - y)**2)
+            # err = np.mean((o - y)**2)
 
             # max value in actual output and max value in expected output
             nr_correct += int(np.argmax(o) == np.argmax(y))
@@ -119,36 +136,18 @@ def train():
     np.savez_compressed("trained_model.npz", w1=w1, b1=b1, w2=w2, b2=b2)
 
 
-def forward_prop(x, w1, b1, w2, b2):
-    z1 = w1.dot(x) + b1
-    h = sigmoid(z1)
-
-    z2 = w2.dot(h) + b2
-    o = sigmoid(z2)
-
-    return o
-
-
 def testing():
-    x_test, y_test = read_testing()
+    x_test, y_test = read_testing_data()
     nr_correct = 0
 
-    with np.load("trained_model.npz") as f:
-        w1 = f["w1"]
-        b1 = f["b1"]
-        w2 = f["w2"]
-        b2 = f["b2"]
+    forward_prop = init_model()
 
     total_confid = 0
     for x, y in zip(x_test, y_test):
         x.shape += (1,)
         y.shape += (1,)
 
-        z1 = w1.dot(x) + b1
-        h = sigmoid(z1)
-
-        z2 = w2.dot(h) + b2
-        o = sigmoid(z2)
+        o = forward_prop(x)
 
         nr_correct += int(np.argmax(o) == np.argmax(y))
         if np.argmax(o) == np.argmax(y):
@@ -166,14 +165,9 @@ def test_image(path):
     x = np.matrix(pix_val).reshape(784, 1)
     x = x.astype("float32") / 255
 
-    with np.load("trained_model.npz") as f:
-        w1 = f["w1"]
-        b1 = f["b1"]
-        w2 = f["w2"]
-        b2 = f["b2"]
-
-    o = forward_prop(x, w1, b1, w2, b2)
-    ans = int(o.argmax()) + 1
+    model = init_model()
+    o = model(x)
+    ans = int(o.argmax()) + 2
     confidence = round(float(o[o.argmax()] * 100), 2)
     # print("image of {} with confidence of {} %".format(o.argmax()+1, confidence))
     return ans, confidence
@@ -189,29 +183,28 @@ def test_png_imgs():
     ans, confidenece = test_image("images/8.png")
     print("ans = {}, ai_ans = {}, confidence = {}".format(8, ans, confidenece))
 
-    print("black on white images")
-
-    ans, confidenece = test_image("images/black-on-white/2.png")
-    print("ans = {}, ai_ans = {}, confidence = {}".format(2, ans, confidenece))
-    ans, confidenece = test_image("images/black-on-white/3.png")
-    print("ans = {}, ai_ans = {}, confidence = {}".format(3, ans, confidenece))
-
 
 def run():
     hostname = "localhost"
     port = 5533
 
-    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    forward_prop = init_model()
 
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.bind((hostname, port))
     s.listen(5)
+    numbers = list(range(10))
 
+    print("server listening on port localhost", port)
     while True:
         c, addr = s.accept()
         data = list(c.recv(784))
 
-        # do something with the data
-        # send back the results
+        # o = forward_prop(data)
+        # i = np.argmax(o)
+
+        i = 5
+        c.send(numbers[i].to_bytes(2, 'big'))
 
         c.close()
 
