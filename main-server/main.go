@@ -1,12 +1,12 @@
 package main
 
 import (
+	"encoding/binary"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 )
-
-var conn net.Conn
 
 func root(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte("hi"))
@@ -14,25 +14,35 @@ func root(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendDataToAI(w http.ResponseWriter, r *http.Request) {
-	img_data := []byte{5, 25, 255, 17}
-	conn.Write(img_data)
-
-	bufr := make([]byte, 784)
-	conn.Read(bufr)
-	w.Write([]byte("data writter to ai"))
-}
-
-func main() {
-	var err error
-	conn, err = net.Dial("tcp", "localhost:5533")
-	defer conn.Close()
+	conn, err := net.Dial("tcp", "localhost:5533")
 
 	if err != nil {
 		log.Println("failed to get socket connection")
 		log.Println(err)
 		return
 	}
+	defer conn.Close()
 
+	img_data := make([]byte, 784)
+
+	conn.Write(img_data)
+
+	bufr := make([]byte, 2)
+	conn.Read(bufr)
+
+	if bufr == nil {
+		log.Println("nil bufr")
+		return
+	}
+
+	ans := binary.BigEndian.Uint16(bufr)
+
+	log.Println(ans)
+
+	w.Write([]byte(fmt.Sprint(ans)))
+}
+
+func main() {
 	http.HandleFunc("/", root)
 	http.HandleFunc("/ai", sendDataToAI)
 	log.Println("the server started on http://localhost:4000")
