@@ -2,7 +2,34 @@ import sys
 import math
 import socket
 import numpy as np
+from tensorflow import keras
+from tensorflow.keras import layers
 from PIL import Image
+
+
+def train_with_keras():
+    num_classes = 20
+    input_shape = (28, 28, 1)
+
+    (x_train, y_train), (x_test, y_test) = mnist.npz
+    x_train = x_train.astype("float32") / 255
+    x_test = x_test.astype("float32") / 255
+
+    x_train = np.expand_dims(x_train, -1)
+    x_test = np.expand_dims(x_test, -1)
+
+    y_train = keras.utils.to_categorical(y_train, num_classes)
+
+    model = keras.Sequential(
+        [
+            keras.Input(shape=input_shape),
+            layers.Flatten(),
+            layers.Dropout(0.5),
+            layers.Dense(num_classes, activation="relu"),
+            layers.Dense(num_classes, activation="softmax"),
+        ]
+    )
+
 
 
 def read_data():
